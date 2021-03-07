@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+
+        <LangVersion>preview</LangVersion>
+        <Nullable>enable</Nullable>
+        <NullableContextOptions>enable</NullableContextOptions>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+        <OutputType>
+            <!-- TODO -->
+        </OutputType>
+        <OutputPath>../bin</OutputPath>
+
+        <!-- <TrimMode>Link</TrimMode> -->
+        <Deterministic>true</Deterministic>
+        <PublishTrimmed>true</PublishTrimmed>
+        <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+        <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+        <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
+        <DisableWinExeOutputInference>true</DisableWinExeOutputInference>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+
+        <Authors>unknown6656</Authors>
+        <Company>unknown6656</Company>
+        <Product>
+            Discriminated Unions by Unknown6656
+        </Product>
+        <Copyright>
+            Copyright © 2016-$([System.DateTime]::Today.ToString(yyyy)), unknown6656
+        </Copyright>
+        <PackageProjectUrl>https://github.com/Unknown6656-Megacorp/Unknown6656.DiscriminatedUnions</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/Unknown6656-Megacorp/Unknown6656.DiscriminatedUnions</RepositoryUrl>
+        <PackageIcon>unknown6656-logo-1024.png</PackageIcon>
+        <PackageTags>
+            unknown6656;discriminated;unions
+        </PackageTags>
+
+        <PackageId>
+            Unknown6656.DiscriminatedUnions
+        </PackageId>
+        <IncludeSymbols>true</IncludeSymbols>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <RepositoryType>Git</RepositoryType>
+        <Version>$([System.IO.File]::ReadAllText("$(SolutionDir)version.txt"))</Version>
+        <AssemblyVersion>$([System.IO.File]::ReadAllText("$(SolutionDir)version.txt"))</AssemblyVersion>
+    </PropertyGroup>
+    <ItemGroup>
+        <None Include="C:/Users/unknown6656/Pictures/unknown6656/unknown6656-logo-1024.png">
+            <Pack>True</Pack>
+            <PackagePath></PackagePath>
+        </None>
+    </ItemGroup>
+    <ItemGroup>
+        <Compile Remove="old\**" />
+        <EmbeddedResource Remove="old\**" />
+        <None Remove="old\**" />
+    </ItemGroup>
+</Project>
