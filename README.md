@@ -23,7 +23,7 @@ else if (union1.Is(out bool b))
     Console.WriteLine("the union stores the boolean value " + b);
 ```
 
-### Installation
+## Installation
 Use one of the follwing methods to install and use this library:
 - **Package Manager:**
   ```batch
@@ -45,3 +45,13 @@ Use one of the follwing methods to install and use this library:
   ```fsharp
   #r "nuget: Unknown6656.DiscriminatedUnions, *"
   ```
+  
+## Usage
+To use the discriminated unions, simply include the namespace `Unknown6656`:
+```csharp
+using Unknown6656;
+```
+Each union type `Union<...>` is an abstract record with a private constructor.
+The union cases are implemented using the sealed records `Union<...>.Case*`, which inherit from the class in which they are contained.
+
+The `Union<...>`-type defines the following methods:
