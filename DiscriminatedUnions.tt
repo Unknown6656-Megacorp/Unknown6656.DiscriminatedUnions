@@ -21,7 +21,7 @@ namespace Unknown6656
 {
 #if UNSAFE
     /// <summary>
-    /// An interface for discriminated type-unsafe unions
+    /// An interface for discriminated type-unsafe unions.
     /// </summary>
     public interface IUnsafeUnion
     {
@@ -62,14 +62,6 @@ namespace Unknown6656
 <#
     int maxsize = 10;
 
-    try
-    {
-        string path = Host.ResolvePath("../maxdim.txt");
-
-        maxsize = int.Parse(File.ReadAllText(path).Trim()) + 1;
-    }
-    catch { }
-
     for (int i = 2; i <= maxsize; i++)
     {
         string type_str = string.Join(", ", Enumerable.Range(0, i).Select(j => $"T{j}"));
@@ -79,15 +71,22 @@ namespace Unknown6656
 
 #if UNSAFE
     /// <summary>
-    /// A generic type-unsafe discriminated union with <#=i#> different type cases
+    /// A generic type-unsafe discriminated union with <#=i#> different type cases.
     /// </summary>
 #else
     /// <summary>
-    /// A generic type-safe discriminated union with <#=i#> different type cases
+    /// A generic type-safe discriminated union with <#=i#> different type cases.
     /// </summary>
 #endif
-    /// <inheritdoc/>
-    public abstract class Union<<#=type_str#>>
+<#
+    for (int j = 0; j < i; ++j)
+    {
+#>
+    /// <typeparam name="T<#=j#>">The generic union case type <#=j#>.</typeparam>
+<#
+    }
+#>
+    public abstract record Union<<#=type_str#>>
 #if UNSAFE
         : IUnsafeUnion
 #endif
@@ -155,13 +154,12 @@ namespace Unknown6656
         /// <summary>
         /// Returns whether the union contains a value of the given generic type <typeparamref name="T<#=j#>"/>.
         /// </summary>
-        /// <typeparam name="T<#=j#>">Generic type parameter.</typeparam>
         /// <param name="value">The union value cast to <typeparamref name="T<#=j#>"/> (or <see langword="default"/>(<typeparamref name="T<#=j#>"/>) if the return value is <see langword="false"/>).</param>
         /// <returns>Value indicating whether the union contains a value of the type <typeparamref name="T<#=j#>"/>.</returns>
         public bool Is([MaybeNullWhen(false), NotNullWhen(true)] out T<#=j#> value)
         {
             (bool success, T<#=j#> val) = Match(
-                <#=string.Join(",\n                ", Enumerable.Range(0, i).Select(k => k == j ? "c => (true, c)" : "_ => (false, default)"))#>
+                <#=string.Join(",\n                ", Enumerable.Range(0, i).Select(k => k == j ? "c => (true, c)" : "_ => (false, default)!"))#>
             );
 
             value = val;
@@ -218,11 +216,27 @@ namespace Unknown6656
         /// <inheritdoc/>
         public T? AsReferenceType<T>() where T : class => As<T>();
 #endif
+        /// <inheritdoc/>
+        public override string ToString() => UnsafeItem?.ToString() ?? string.Empty;
 
         // prevent inheritance by external classes
         private Union()
         {
         }
+
+        public static Union<<#=type_str#>>? FromObject(object? obj) => obj switch
+        {
+<#
+        for (int j = 0; j < i; j++)
+        {
+#>
+            T<#=j#> t<#=j#> => new Case<#=j#>(t<#=j#>),
+<#
+        }
+#>
+            null => null,
+            _ => throw new ArgumentException($"An object of the type {obj.GetType()} cannot be cast to an union case of {typeof(Union<<#=type_str#>>)}.", nameof(obj))
+        };
 
 #if UNSAFE
 <#
@@ -246,7 +260,7 @@ namespace Unknown6656
         /// Casts the given <typeparamref name="T<#=j#>"/>-value to the union type.
         /// </summary>
         /// <param name="value">Value</param>
-        public static implicit operator Union<<#=type_str#>>(T<#=j#> value) => new Case<#=j + 1#>(value);
+        public static implicit operator Union<<#=type_str#>>(T<#=j#> value) => new Case<#=j#>(value);
 <#
         }
 #>
@@ -257,9 +271,9 @@ namespace Unknown6656
 #>
 
         /// <summary>
-        /// Union case №<#=j + 1#> (Represents type <typeparamref name="T<#=j#>"/>).
+        /// Union case №<#=j#> (Represents type <typeparamref name="T<#=j#>"/>).
         /// </summary>
-        public sealed class Case<#=j + 1#>
+        public sealed record Case<#=j#>
             : Union<#=""#><<#=type_str#>>
         {
 #if UNSAFE
@@ -279,7 +293,7 @@ namespace Unknown6656
             /// Creates a new union with <#=i#> possible cases and sets it to a value of the type <typeparamref name="T<#=j#>"/>.
             /// </summary>
             /// <param name="item">Union value of the type <typeparamref name="T<#=j#>"/>.</param>
-            public Case<#=j + 1#>(T<#=j#> item) : base() => Item = item;
+            public Case<#=j#>(T<#=j#> item) : base() => Item = item;
 
             /// <inheritdoc/>
             public override T Match<T>(<#=func_str#>) => func<#=j#>(Item);
@@ -288,21 +302,21 @@ namespace Unknown6656
             public override void Match(<#=act_str#>) => func<#=j#>(Item);
 
             /// <inheritdoc/>
-            public override string ToString() => Item?.ToString() ?? typeof(Case<#=j + 1#>).ToString();
+            public override string ToString() => Item?.ToString() ?? typeof(Case<#=j#>).ToString();
 
 #if UNSAFE
             /// <inheritdoc cref="Union{<#=type_str#>}.AsCase<#=j#>"/>
-            public static implicit operator T<#=j#>(Case<#=j + 1#> @case) => @case.Item;
+            public static implicit operator T<#=j#>(Case<#=j#> @case) => @case.Item;
 #else
             /// <inheritdoc cref="Union{<#=type_str#>}.AsCase<#=j#>"/>
-            public static explicit operator T<#=j#>(Case<#=j + 1#> @case) => @case.Item;
+            public static explicit operator T<#=j#>(Case<#=j#> @case) => @case.Item;
 #endif
 
             /// <summary>
             /// Casts the given <typeparamref name="T<#=j#>"/>-value to the union type.
             /// </summary>
             /// <param name="value">Value</param>
-            public static implicit operator Case<#=j + 1#>(T<#=j#> value) => new Case<#=j + 1#>(value);
+            public static implicit operator Case<#=j#>(T<#=j#> value) => new Case<#=j#>(value);
         }
 <#
         }
