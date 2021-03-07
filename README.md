@@ -18,9 +18,9 @@ Union<int, bool> union1 = 315;
 Union<int, bool> union2 = false;
 
 if (union1.Is(out int i))
-    Console.WriteLine($"the union stores the integer value {i}.");
+    Console.WriteLine("the union stores the integer value " + i);
 else if (union1.Is(out bool b))
-    Console.WriteLine($"the union stores the boolean value {b}.");
+    Console.WriteLine("the union stores the boolean value " + b);
 ```
 
 ### Installation
