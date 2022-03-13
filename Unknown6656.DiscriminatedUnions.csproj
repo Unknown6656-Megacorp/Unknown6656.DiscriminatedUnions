@@ -47,22 +47,22 @@
         </None>
     </ItemGroup>
     <ItemGroup>
-      <None Update="DiscriminatedUnions.tt">
-        <Generator>TextTemplatingFileGenerator</Generator>
-        <LastGenOutput>DiscriminatedUnions.cs</LastGenOutput>
-      </None>
+        <None Update="DiscriminatedUnions.tt">
+            <Generator>TextTemplatingFileGenerator</Generator>
+            <LastGenOutput>DiscriminatedUnions.cs</LastGenOutput>
+        </None>
     </ItemGroup>
     <ItemGroup>
-      <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+        <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
     </ItemGroup>
     <ItemGroup>
-      <Compile Update="DiscriminatedUnions.cs">
-        <DesignTime>True</DesignTime>
-        <AutoGen>True</AutoGen>
-        <DependentUpon>DiscriminatedUnions.tt</DependentUpon>
-      </Compile>
+        <Compile Update="DiscriminatedUnions.cs">
+            <DesignTime>True</DesignTime>
+            <AutoGen>True</AutoGen>
+            <DependentUpon>DiscriminatedUnions.tt</DependentUpon>
+        </Compile>
     </ItemGroup>
     <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-      <Exec Command="del obj\project.assets.json&#xD;&#xA;dotnet restore" />
+        <Exec Command="del obj\project.assets.json&#xD;&#xA;dotnet restore" />
     </Target>
 </Project>
