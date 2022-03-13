@@ -17,47 +17,48 @@
 using System.Diagnostics.CodeAnalysis;
 using System;
 
-namespace Unknown6656
-{
+namespace Unknown6656;
+
+
 #if UNSAFE
+/// <summary>
+/// An interface for discriminated type-unsafe unions.
+/// </summary>
+public interface IUnsafeUnion
+{
     /// <summary>
-    /// An interface for discriminated type-unsafe unions.
+    /// Returns the union value cast to the given generic type.
+    /// <para/>
+    /// It is advised to use the methods <see cref="AsValueType{T}"/> or <see cref="AsReferenceType{T}"/> instead.
     /// </summary>
-    public interface IUnsafeUnion
-    {
-        /// <summary>
-        /// Returns the union value cast to the given generic type.
-        /// <para/>
-        /// It is advised to use the methods <see cref="AsValueType{T}"/> or <see cref="AsReferenceType{T}"/> instead.
-        /// </summary>
-        [return: MaybeNull]
-        T As<T>();
+    [return: MaybeNull]
+    T As<T>();
 
-        /// <summary>
-        /// Returns the union value cast to the given generic value type.
-        /// </summary>
-        T AsValueType<T>() where T : struct;
+    /// <summary>
+    /// Returns the union value cast to the given generic value type.
+    /// </summary>
+    T AsValueType<T>() where T : struct;
 
-        /// <summary>
-        /// Returns the union value cast to the given generic reference type.
-        /// </summary>
-        T? AsReferenceType<T>() where T : class;
+    /// <summary>
+    /// Returns the union value cast to the given generic reference type.
+    /// </summary>
+    T? AsReferenceType<T>() where T : class;
 
-        /// <summary>
-        /// Returns whether the union contains a value of the given generic type.
-        /// </summary>
-        bool Is<T>();
+    /// <summary>
+    /// Returns whether the union contains a value of the given generic type.
+    /// </summary>
+    bool Is<T>();
 
-        /// <summary>
-        /// Returns whether the union contains a value of the given generic type.
-        /// </summary>
-        bool Is<T>([MaybeNullWhen(false), NotNullWhen(true)] out T value);
+    /// <summary>
+    /// Returns whether the union contains a value of the given generic type.
+    /// </summary>
+    bool Is<T>([MaybeNullWhen(false), NotNullWhen(true)] out T value);
 
-        /// <summary>
-        /// The union's type-unsafe item.
-        /// </summary>
-        object? UnsafeItem { get; }
-    }
+    /// <summary>
+    /// The union's type-unsafe item.
+    /// </summary>
+    object? UnsafeItem { get; }
+}
 #endif
 <#
     int maxsize = 10;
@@ -70,259 +71,254 @@ namespace Unknown6656
 #>
 
 #if UNSAFE
-    /// <summary>
-    /// A generic type-unsafe discriminated union with <#=i#> different type cases.
-    /// </summary>
-#else
-    /// <summary>
-    /// A generic type-safe discriminated union with <#=i#> different type cases.
-    /// </summary>
-#endif
+/// <summary>
+/// A generic type-unsafe discriminated union with <#=i#> different type cases.
+/// </summary>
 <#
     for (int j = 0; j < i; ++j)
-    {
+        WriteLine($"/// <typeparam name=\"T{j}\">The generic union case type {j}.</typeparam>");
 #>
-    /// <typeparam name="T<#=j#>">The generic union case type <#=j#>.</typeparam>
+#else
+/// <summary>
+/// A generic type-safe discriminated union with <#=i#> different type cases.
+/// </summary>
 <#
+    for (int j = 0; j < i; ++j)
+        WriteLine($"/// <typeparam name=\"T{j}\">The generic union case type {j}.</typeparam>");
+#>
+#endif
+public abstract record Union<<#=type_str#>>
+#if UNSAFE
+    : IUnsafeUnion
+#endif
+{
+    /// <summary>
+    /// Matches the current union value with the given functions and executes the matching function.
+    /// </summary>
+<#
+        for (int j = 0; j < i; j++)
+        {
+#>
+    /// <param name="func<#=j#>">A function which matches the union type <typeparamref name="T<#=j#>"/>.</param>
+<#
+        }
+#>
+    public abstract void Match(<#=act_str#>);
+
+    /// <summary>
+    /// Matches the current union value with the given functions and returns the common return value of the function.
+    /// </summary>
+    /// <typeparam name="T">Common return type</typeparam>
+<#
+        for (int j = 0; j < i; j++)
+        {
+#>
+    /// <param name="func<#=j#>">A function which matches the union type <typeparamref name="T<#=j#>"/>.</param>
+<#
+        }
+#>
+    /// <returns>Match result</returns>
+    public abstract T Match<T>(<#=func_str#>);
+<#
+        for (int j = 0; j < i; j++)
+        {
+#>
+
+    /// <summary>
+    /// Returns, whether the current union instance is from the type <typeparamref name="T<#=j#>"/>.
+    /// </summary>
+    public virtual bool IsCase<#=j#> => false;
+<#
+        }
+#>
+#if UNSAFE
+<#
+        for (int j = 0; j < i; j++)
+        {
+#>
+    /// <summary>
+    /// Returns the union value cast to the type <typeparamref name="T<#=j#>"/>.
+    /// </summary>
+    [MaybeNull]
+    public T<#=j#> AsCase<#=j#> => As<T<#=j#>>();
+
+<#
+        }
+#>
+    /// <inheritdoc/>
+    public abstract object? UnsafeItem { get; }
+#endif
+<#
+        for (int j = 0; j < i; j++)
+        {
+#>
+    /// <summary>
+    /// Returns whether the union contains a value of the given generic type <typeparamref name="T<#=j#>"/>.
+    /// </summary>
+    /// <param name="value">The union value cast to <typeparamref name="T<#=j#>"/> (or <see langword="default"/>(<typeparamref name="T<#=j#>"/>) if the return value is <see langword="false"/>).</param>
+    /// <returns>Value indicating whether the union contains a value of the type <typeparamref name="T<#=j#>"/>.</returns>
+    public bool Is([MaybeNullWhen(false), NotNullWhen(true)] out T<#=j#> value)
+    {
+        (bool success, T<#=j#> val) = Match(
+            <#=string.Join(",\n            ", Enumerable.Range(0, i).Select(k => k == j ? "c => (true, c)" : "_ => (false, default)!"))#>
+        );
+
+        value = val;
+
+        return success;
     }
+
+<#
+        }
 #>
-    public abstract record Union<<#=type_str#>>
 #if UNSAFE
-        : IUnsafeUnion
-#endif
+    /// <inheritdoc/>
+    public bool Is<T>() => typeof(T) == UnsafeItem?.GetType();
+
+    /// <inheritdoc/>
+    public bool Is<T>([MaybeNullWhen(false), NotNullWhen(true)] out T value)
     {
-        /// <summary>
-        /// Matches the current union value with the given functions and executes the matching function.
-        /// </summary>
-<#
-        for (int j = 0; j < i; j++)
+        if (UnsafeItem is T v)
         {
-#>
-        /// <param name="func<#=j#>">A function which matches the union type <typeparamref name="T<#=j#>"/>.</param>
-<#
-        }
-#>
-        public abstract void Match(<#=act_str#>);
+            value = v;
 
-        /// <summary>
-        /// Matches the current union value with the given functions and returns the common return value of the function.
-        /// </summary>
-        /// <typeparam name="T">Common return type</typeparam>
-<#
-        for (int j = 0; j < i; j++)
-        {
-#>
-        /// <param name="func<#=j#>">A function which matches the union type <typeparamref name="T<#=j#>"/>.</param>
-<#
+            return true;
         }
-#>
-        /// <returns>Match result</returns>
-        public abstract T Match<T>(<#=func_str#>);
-<#
-        for (int j = 0; j < i; j++)
-        {
-#>
 
-        /// <summary>
-        /// Returns, whether the current union instance is from the type <typeparamref name="T<#=j#>"/>.
-        /// </summary>
-        public virtual bool IsCase<#=j#> => false;
+        value = default;
+
+        return false;
+    }
+
+    /// <inheritdoc/>
+    [return: MaybeNull]
+    public T As<T>() => UnsafeItem switch
+    {
+        T t => t,
+        null => default,
+        _ => throw new InvalidCastException($"A discriminated union case of the type '{UnsafeItem?.GetType() ?? typeof(void)}' cannot be converted to a value of the type '{typeof(T)}'.")
+    };
+
+    /// <inheritdoc/>
+    [return: MaybeNull]
+    public T AsOrDefault<T>() => UnsafeItem switch
+    {
+        T t => t,
+        _ => default
+    };
+
+    /// <inheritdoc/>
+    public T AsValueType<T>() where T : struct => UnsafeItem switch
+    {
+        T t => t,
+        _ => throw new InvalidCastException($"A discriminated union case of the type '{UnsafeItem?.GetType() ?? typeof(void)}' cannot be converted to a value of the type '{typeof(T)}'.")
+    };
+
+    /// <inheritdoc/>
+    public T? AsReferenceType<T>() where T : class => As<T>();
+#endif
+    /// <inheritdoc/>
+    public override string ToString() => UnsafeItem?.ToString() ?? string.Empty;
+
+    // prevent inheritance by external classes
+    private Union()
+    {
+    }
+
+    public static Union<<#=type_str#>>? FromObject(object? obj) => obj switch
+    {
 <#
-        }
+        for (int j = 0; j < i; j++)
+            WriteLine($"        T{j} t{j} => new Case{j}(t{j}),");
 #>
+        null => null,
+        _ => throw new ArgumentException($"An object of the type {obj.GetType()} cannot be cast to an union case of {typeof(Union<<#=type_str#>>)}.", nameof(obj))
+    };
+
 #if UNSAFE
 <#
         for (int j = 0; j < i; j++)
         {
 #>
-        /// <summary>
-        /// Returns the union value cast to the type <typeparamref name="T<#=j#>"/>.
-        /// </summary>
-        [MaybeNull]
-        public T<#=j#> AsCase<#=j#> => As<T<#=j#>>();
 
+    /// <inheritdoc cref="Union{<#=type_str#>}.AsCase<#=j#>"/>
+    [return: MaybeNull]
+    public static implicit operator T<#=j#>(Union<<#=type_str#>> union) => union.As<T<#=j#>>();
 <#
         }
 #>
-        /// <inheritdoc/>
-        public abstract object? UnsafeItem { get; }
 #endif
 <#
         for (int j = 0; j < i; j++)
         {
 #>
-        /// <summary>
-        /// Returns whether the union contains a value of the given generic type <typeparamref name="T<#=j#>"/>.
-        /// </summary>
-        /// <param name="value">The union value cast to <typeparamref name="T<#=j#>"/> (or <see langword="default"/>(<typeparamref name="T<#=j#>"/>) if the return value is <see langword="false"/>).</param>
-        /// <returns>Value indicating whether the union contains a value of the type <typeparamref name="T<#=j#>"/>.</returns>
-        public bool Is([MaybeNullWhen(false), NotNullWhen(true)] out T<#=j#> value)
-        {
-            (bool success, T<#=j#> val) = Match(
-                <#=string.Join(",\n                ", Enumerable.Range(0, i).Select(k => k == j ? "c => (true, c)" : "_ => (false, default)!"))#>
-            );
 
-            value = val;
-
-            return success;
-        }
-
+    /// <summary>
+    /// Casts the given <typeparamref name="T<#=j#>"/>-value to the union type.
+    /// </summary>
+    /// <param name="value">Value</param>
+    public static implicit operator Union<<#=type_str#>>(T<#=j#> value) => new Case<#=j#>(value);
 <#
         }
+
+        WriteLine("");
+
+        for (int j = 0; j < i; j++)
+        {
 #>
+
+    /// <summary>
+    /// Union case №<#=j#> (Represents type <typeparamref name="T<#=j#>"/>).
+    /// </summary>
+    public sealed record Case<#=j#>
+        : Union<#=""#><<#=type_str#>>
+    {
 #if UNSAFE
         /// <inheritdoc/>
-        public bool Is<T>() => typeof(T) == UnsafeItem?.GetType();
+        public override bool IsCase<#=j#> => true;
 
         /// <inheritdoc/>
-        public bool Is<T>([MaybeNullWhen(false), NotNullWhen(true)] out T value)
-        {
-            if (UnsafeItem is T v)
-            {
-                value = v;
-
-                return true;
-            }
-
-            value = default;
-
-            return false;
-        }
-
-        /// <inheritdoc/>
-        [return: MaybeNull]
-        public T As<T>() => UnsafeItem switch
-        {
-            T t => t,
-            null => default,
-            _ => throw new InvalidCastException($"A discriminated union case of the type '{UnsafeItem?.GetType() ?? typeof(void)}' cannot be converted to a value of the type '{typeof(T)}'.")
-        };
-
-        /// <inheritdoc/>
-        [return: MaybeNull]
-        public T AsOrDefault<T>() => UnsafeItem switch
-        {
-            T t => t,
-            _ => default
-        };
-
-        /// <inheritdoc/>
-        public T AsValueType<T>() where T : struct => UnsafeItem switch
-        {
-            T t => t,
-            _ => throw new InvalidCastException($"A discriminated union case of the type '{UnsafeItem?.GetType() ?? typeof(void)}' cannot be converted to a value of the type '{typeof(T)}'.")
-        };
-
-        /// <inheritdoc/>
-        public T? AsReferenceType<T>() where T : class => As<T>();
+        public override object? UnsafeItem => Item;
 #endif
+        /// <summary>
+        /// The union's item.
+        /// </summary>
+        public T<#=j#> Item { get; }
+
+
+        /// <summary>
+        /// Creates a new union with <#=i#> possible cases and sets it to a value of the type <typeparamref name="T<#=j#>"/>.
+        /// </summary>
+        /// <param name="item">Union value of the type <typeparamref name="T<#=j#>"/>.</param>
+        public Case<#=j#>(T<#=j#> item) : base() => Item = item;
+
         /// <inheritdoc/>
-        public override string ToString() => UnsafeItem?.ToString() ?? string.Empty;
+        public override T Match<T>(<#=func_str#>) => func<#=j#>(Item);
 
-        // prevent inheritance by external classes
-        private Union()
-        {
-        }
+        /// <inheritdoc/>
+        public override void Match(<#=act_str#>) => func<#=j#>(Item);
 
-        public static Union<<#=type_str#>>? FromObject(object? obj) => obj switch
-        {
-<#
-        for (int j = 0; j < i; j++)
-        {
-#>
-            T<#=j#> t<#=j#> => new Case<#=j#>(t<#=j#>),
-<#
-        }
-#>
-            null => null,
-            _ => throw new ArgumentException($"An object of the type {obj.GetType()} cannot be cast to an union case of {typeof(Union<<#=type_str#>>)}.", nameof(obj))
-        };
+        /// <inheritdoc/>
+        public override string ToString() => Item?.ToString() ?? typeof(Case<#=j#>).ToString();
 
 #if UNSAFE
-<#
-        for (int j = 0; j < i; j++)
-        {
-#>
-
         /// <inheritdoc cref="Union{<#=type_str#>}.AsCase<#=j#>"/>
-        [return: MaybeNull]
-        public static implicit operator T<#=j#>(Union<<#=type_str#>> union) => union.As<T<#=j#>>();
-<#
-        }
-#>
+        public static implicit operator T<#=j#>(Case<#=j#> @case) => @case.Item;
+#else
+        /// <inheritdoc cref="Union{<#=type_str#>}.AsCase<#=j#>"/>
+        public static explicit operator T<#=j#>(Case<#=j#> @case) => @case.Item;
 #endif
-<#
-        for (int j = 0; j < i; j++)
-        {
-#>
 
         /// <summary>
         /// Casts the given <typeparamref name="T<#=j#>"/>-value to the union type.
         /// </summary>
         /// <param name="value">Value</param>
-        public static implicit operator Union<<#=type_str#>>(T<#=j#> value) => new Case<#=j#>(value);
-<#
-        }
-#>
-
-<#
-        for (int j = 0; j < i; j++)
-        {
-#>
-
-        /// <summary>
-        /// Union case №<#=j#> (Represents type <typeparamref name="T<#=j#>"/>).
-        /// </summary>
-        public sealed record Case<#=j#>
-            : Union<#=""#><<#=type_str#>>
-        {
-#if UNSAFE
-            /// <inheritdoc/>
-            public override bool IsCase<#=j#> => true;
-
-            /// <inheritdoc/>
-            public override object? UnsafeItem => Item;
-#endif
-            /// <summary>
-            /// The union's item.
-            /// </summary>
-            public T<#=j#> Item { get; }
-
-
-            /// <summary>
-            /// Creates a new union with <#=i#> possible cases and sets it to a value of the type <typeparamref name="T<#=j#>"/>.
-            /// </summary>
-            /// <param name="item">Union value of the type <typeparamref name="T<#=j#>"/>.</param>
-            public Case<#=j#>(T<#=j#> item) : base() => Item = item;
-
-            /// <inheritdoc/>
-            public override T Match<T>(<#=func_str#>) => func<#=j#>(Item);
-
-            /// <inheritdoc/>
-            public override void Match(<#=act_str#>) => func<#=j#>(Item);
-
-            /// <inheritdoc/>
-            public override string ToString() => Item?.ToString() ?? typeof(Case<#=j#>).ToString();
-
-#if UNSAFE
-            /// <inheritdoc cref="Union{<#=type_str#>}.AsCase<#=j#>"/>
-            public static implicit operator T<#=j#>(Case<#=j#> @case) => @case.Item;
-#else
-            /// <inheritdoc cref="Union{<#=type_str#>}.AsCase<#=j#>"/>
-            public static explicit operator T<#=j#>(Case<#=j#> @case) => @case.Item;
-#endif
-
-            /// <summary>
-            /// Casts the given <typeparamref name="T<#=j#>"/>-value to the union type.
-            /// </summary>
-            /// <param name="value">Value</param>
-            public static implicit operator Case<#=j#>(T<#=j#> value) => new Case<#=j#>(value);
-        }
-<#
-        }
-#>
+        public static implicit operator Case<#=j#>(T<#=j#> value) => new Case<#=j#>(value);
     }
 <#
-    }
+        }
 #>
 }
+<#
+    }
+#>
