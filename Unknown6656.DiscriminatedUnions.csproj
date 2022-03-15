@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+        <TargetFramework>netstandard2.1</TargetFramework>
 
         <LangVersion>preview</LangVersion>
         <Nullable>enable</Nullable>
@@ -62,7 +62,7 @@
             <DependentUpon>DiscriminatedUnions.tt</DependentUpon>
         </Compile>
     </ItemGroup>
-    <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <!--<Target Name="PreBuild" BeforeTargets="PreBuildEvent">
         <Exec Command="del obj\project.assets.json&#xD;&#xA;dotnet restore" />
-    </Target>
+    </Target>-->
 </Project>
